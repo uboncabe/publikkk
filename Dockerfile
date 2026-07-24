@@ -1,6 +1,7 @@
 # Multi-stage Dockerfile untuk Lavalink v4 - Railway Optimized
 # Designed untuk Railway's Dockerfile builder
 # Ensures 100% compatibility dengan Railway deployment platform
+# Updated: install native libs required by libudpqueue and download youtube-source plugin
 
 FROM eclipse-temurin:17-jre-alpine
 
@@ -10,12 +11,14 @@ LABEL description="Lavalink v4 Audio Streaming Server - Railway Edition"
 # Set working directory
 WORKDIR /lavalink
 
-# Install runtime dependencies
+# Install runtime dependencies (including native libs libgcc/libstdc++)
 RUN apk add --no-cache \
     curl \
     ca-certificates \
     tzdata \
     wget \
+    libgcc \
+    libstdc++ \
     && rm -rf /var/cache/apk/*
 
 # Download Lavalink v4.0.8 dari official GitHub release
@@ -27,9 +30,15 @@ RUN echo "⏳ Downloading Lavalink v4.0.8..." && \
     echo "✅ Download complete!"
 
 # Create necessary directories dengan proper permissions
-RUN mkdir -p ./data ./logs && \
-    chmod 755 ./data ./logs && \
+RUN mkdir -p ./data ./logs ./plugins && \
+    chmod 755 ./data ./logs ./plugins && \
     echo "✅ Directories created"
+
+# Download official youtube-source plugin into plugins/ so YouTube searches work
+RUN echo "⏳ Downloading youtube-source plugin..." && \
+    wget -q "https://github.com/lavalink-devs/youtube-source/releases/latest/download/youtube-source-plugin.jar" -O /tmp/youtube-source-plugin.jar || true && \
+    if [ -f /tmp/youtube-source-plugin.jar ]; then mv /tmp/youtube-source-plugin.jar ./plugins/; fi && \
+    ls -la ./plugins || true
 
 # Copy application configuration dari repository
 COPY application.yml ./application.yml
