@@ -35,9 +35,16 @@ RUN mkdir -p ./data ./logs ./plugins && \
     echo "✅ Directories created"
 
 # Download official youtube-source plugin into plugins/ so YouTube searches work
-RUN echo "⏳ Downloading youtube-source plugin..." && \
-    wget -q "https://github.com/lavalink-devs/youtube-source/releases/latest/download/youtube-source-plugin.jar" -O /tmp/youtube-source-plugin.jar || true && \
-    if [ -f /tmp/youtube-source-plugin.jar ]; then mv /tmp/youtube-source-plugin.jar ./plugins/; fi && \
+# Use curl -fL to follow redirects and fail on HTTP errors; remove any zero-byte file
+RUN echo "⏳ Attempting to download youtube-source plugin..." && \
+    PLUGIN_URL="https://github.com/lavalink-devs/youtube-source/releases/latest/download/youtube-source-plugin.jar" && \
+    curl -fSL "$PLUGIN_URL" -o /tmp/youtube-source-plugin.jar || true && \
+    if [ -s /tmp/youtube-source-plugin.jar ]; then \
+      mv /tmp/youtube-source-plugin.jar ./plugins/ && echo "✅ youtube-source plugin downloaded"; \
+    else \
+      echo "⚠️ youtube-source plugin not available (skipping). If you need YouTube search, add plugin jar to /lavalink/plugins or ensure network access."; \
+      rm -f /tmp/youtube-source-plugin.jar; \
+    fi && \
     ls -la ./plugins || true
 
 # Copy application configuration dari repository
